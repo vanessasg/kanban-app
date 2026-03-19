@@ -11,6 +11,8 @@ import {
   updateColumn,
 } from "../../services/boardService";
 import TaskCard from "../task/TaskCard";
+import TaskModal from "../task/TaskModal";
+import ConfirmModal from '../ui/ConfirmModal'
 
 export default function Column({ column, boardId, onTasksChange }) {
   const [tasks, setTasks] = useState([]);
@@ -18,6 +20,9 @@ export default function Column({ column, boardId, onTasksChange }) {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [colTitle, setColTitle] = useState(column.title);
+
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
 
@@ -44,9 +49,12 @@ export default function Column({ column, boardId, onTasksChange }) {
     setEditingTitle(false);
   };
 
-  const handleDeleteColumn = async () => {
-    if (!window.confirm(`Eliminare la colonna "${column.title}"?`)) return;
-    await deleteColumn(boardId, column.id);
+  const handleDeleteColumn = () => {
+    setConfirmDelete({
+      title: "Elimina colonna",
+      message: `Eliminare la colonna "${column.title}" e tutti i suoi task?`,
+      onConfirm: async () => await deleteColumn(boardId, column.id),
+    });
   };
 
   return (
@@ -94,7 +102,12 @@ export default function Column({ column, boardId, onTasksChange }) {
           strategy={verticalListSortingStrategy}
         >
           {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} columnId={column.id} />
+            <TaskCard
+              key={task.id}
+              task={task}
+              columnId={column.id}
+              onClick={() => setSelectedTask(task)}
+            />
           ))}
         </SortableContext>
       </div>
@@ -139,6 +152,24 @@ export default function Column({ column, boardId, onTasksChange }) {
           </button>
         )}
       </div>
+
+      {selectedTask && (
+        <TaskModal
+          task={selectedTask}
+          boardId={boardId}
+          columnId={column.id}
+          onClose={() => setSelectedTask(null)}
+        />
+      )}
+
+      {confirmDelete && (
+        <ConfirmModal
+          title={confirmDelete.title}
+          message={confirmDelete.message}
+          onConfirm={confirmDelete.onConfirm}
+          onClose={() => setConfirmDelete(null)}
+        />
+      )}
     </div>
   );
 }

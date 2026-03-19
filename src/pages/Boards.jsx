@@ -6,6 +6,7 @@ import {
   createBoard,
   deleteBoard,
 } from "../services/boardService";
+import ConfirmModal from "../components/ui/ConfirmModal";
 
 export default function Boards() {
   const { user, logout } = useAuth();
@@ -14,6 +15,8 @@ export default function Boards() {
   const [newTitle, setNewTitle] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [creating, setCreating] = useState(false);
+
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   useEffect(() => {
     const unsub = subscribeToBoards(user.uid, setBoards);
@@ -34,10 +37,13 @@ export default function Boards() {
     }
   };
 
-  const handleDelete = async (e, boardId) => {
+  const handleDelete = (e, boardId) => {
     e.stopPropagation();
-    if (!window.confirm("Eliminare questa board?")) return;
-    await deleteBoard(boardId);
+    setConfirmDelete({
+      title: "Elimina board",
+      message: "Eliminare questa board? L'operazione è irreversibile.",
+      onConfirm: async () => await deleteBoard(boardId),
+    });
   };
 
   const handleLogout = async () => {
@@ -124,6 +130,14 @@ export default function Boards() {
           </div>
         )}
       </main>
+      {confirmDelete && (
+        <ConfirmModal
+          title={confirmDelete.title}
+          message={confirmDelete.message}
+          onConfirm={confirmDelete.onConfirm}
+          onClose={() => setConfirmDelete(null)}
+        />
+      )}
     </div>
   );
 }
