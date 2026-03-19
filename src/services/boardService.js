@@ -10,6 +10,7 @@ import {
   where,
   orderBy,
   serverTimestamp,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -108,4 +109,38 @@ export async function deleteTask(boardId, columnId, taskId) {
   return deleteDoc(
     doc(db, "boards", boardId, "columns", columnId, "tasks", taskId),
   );
+}
+
+export async function moveTask(boardId, fromColumnId, toColumnId, task) {
+  const batch = writeBatch(db);
+
+  batch.delete(
+    doc(db, "boards", boardId, "columns", fromColumnId, "tasks", task.id),
+  );
+
+  const destRef = doc(
+    collection(db, "boards", boardId, "columns", toColumnId, "tasks"),
+  );
+  batch.set(destRef, {
+    title: task.title,
+    description: task.description || "",
+    dueDate: task.dueDate || null,
+    tags: task.tags || [],
+    assignee: task.assignee || "",
+    order: task.order ?? 0,
+    createdAt: serverTimestamp(),
+  });
+
+  return batch.commit();
+}
+
+export async function reorderTasks(boardId, columnId, tasks) {
+  const batch = writeBatch(db);
+  tasks.forEach((task, index) => {
+    batch.update(
+      doc(db, "boards", boardId, "columns", columnId, "tasks", task.id),
+      { order: index },
+    );
+  });
+  return batch.commit();
 }

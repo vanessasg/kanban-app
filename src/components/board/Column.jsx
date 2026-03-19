@@ -1,22 +1,33 @@
 import { useEffect, useState } from "react";
+import { useDroppable } from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import {
   subscribeToTasks,
   createTask,
   deleteColumn,
   updateColumn,
 } from "../../services/boardService";
+import TaskCard from "../task/TaskCard";
 
-export default function Column({ column, boardId }) {
+export default function Column({ column, boardId, onTasksChange }) {
   const [tasks, setTasks] = useState([]);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [colTitle, setColTitle] = useState(column.title);
 
+  const { setNodeRef, isOver } = useDroppable({ id: column.id });
+
   useEffect(() => {
-    const unsub = subscribeToTasks(boardId, column.id, setTasks);
+    const unsub = subscribeToTasks(boardId, column.id, (tasks) => {
+      setTasks(tasks);
+      onTasksChange(column.id, tasks);
+    });
     return unsub;
-  }, [boardId, column.id]);
+  }, [boardId, column.id, onTasksChange]);
 
   const handleAddTask = async (e) => {
     e.preventDefault();
@@ -39,7 +50,9 @@ export default function Column({ column, boardId }) {
   };
 
   return (
-    <div className="flex-shrink-0 w-80 bg-gray-900 border border-gray-800 rounded-xl flex flex-col max-h-[calc(100vh-120px)]">
+    <div
+      className={`flex-shrink-0 w-80 bg-gray-900 border rounded-xl flex flex-col max-h-[calc(100vh-120px)] transition-colors ${isOver ? "border-indigo-500" : "border-gray-800"}`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
         {editingTitle ? (
@@ -72,17 +85,18 @@ export default function Column({ column, boardId }) {
       </div>
 
       {/* Tasks */}
-      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 min-h-[40px]">
-        {tasks.map((task) => (
-          <div
-            key={task.id}
-            className="bg-gray-800 border border-gray-700 hover:border-indigo-500/50 rounded-lg p-3 cursor-pointer transition-all group"
-          >
-            <p className="text-sm font-medium text-white leading-snug">
-              {task.title}
-            </p>
-          </div>
-        ))}
+      <div
+        ref={setNodeRef}
+        className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 min-h-[60px]"
+      >
+        <SortableContext
+          items={tasks.map((t) => t.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          {tasks.map((task) => (
+            <TaskCard key={task.id} task={task} columnId={column.id} />
+          ))}
+        </SortableContext>
       </div>
 
       {/* Add task */}
