@@ -1,6 +1,30 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+const TAG_COLORS = {
+  Bug: "bg-red-500/15 text-red-400 border-red-500/30",
+  Feature: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
+  Design: "bg-pink-500/15 text-pink-400 border-pink-500/30",
+  Docs: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  Urgent: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+  Review: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
+};
+
+function formatDate(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diff = Math.ceil((d - now) / (1000 * 60 * 60 * 24));
+  const formatted = d.toLocaleDateString("it-IT", {
+    day: "2-digit",
+    month: "short",
+  });
+  if (diff < 0) return { text: formatted, style: "bg-red-500/15 text-red-400" };
+  if (diff <= 2)
+    return { text: formatted, style: "bg-orange-500/15 text-orange-400" };
+  return { text: formatted, style: "bg-gray-700 text-gray-400" };
+}
+
 export default function TaskCard({ task, columnId, onClick }) {
   const {
     attributes,
@@ -20,6 +44,8 @@ export default function TaskCard({ task, columnId, onClick }) {
     opacity: isDragging ? 0.4 : 1,
   };
 
+  const dateInfo = formatDate(task.dueDate);
+
   return (
     <div
       ref={setNodeRef}
@@ -27,11 +53,63 @@ export default function TaskCard({ task, columnId, onClick }) {
       {...attributes}
       {...listeners}
       onClick={onClick}
-      className="bg-gray-800 border border-gray-700 hover:border-indigo-500/50 rounded-lg p-3 cursor-grab active:cursor-grabbing transition-all"
+      className="bg-gray-800 border border-gray-700 hover:border-indigo-500/50 rounded-lg p-3 cursor-grab active:cursor-grabbing transition-all flex flex-col gap-2"
     >
-      <p className="text-sm font-medium text-white leading-snug">
+      <p className="text-sm font-medium text-white leading-snug break-all">
         {task.title}
       </p>
+
+      {task.description && (
+        <p className="text-xs text-gray-500 leading-snug line-clamp-2 break-all">
+          {task.description}
+        </p>
+      )}
+
+      {(task.tags?.length > 0 || dateInfo || task.assignee) && (
+        <div className="flex items-center justify-between gap-2 mt-1">
+          <div className="flex flex-wrap gap-1">
+            {task.tags?.map((tag) => (
+              <span
+                key={tag}
+                className={`text-xs font-medium px-2 py-0.5 rounded-full border ${TAG_COLORS[tag] ?? "bg-gray-700 text-gray-400 border-gray-600"}`}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {dateInfo && (
+              <span
+                className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${dateInfo.style}`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                {dateInfo.text}
+              </span>
+            )}
+            {task.assignee && (
+              <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
+                {task.assignee.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
