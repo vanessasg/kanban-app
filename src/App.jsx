@@ -4,6 +4,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Boards from "./pages/Boards";
+import Board from "./pages/Board";
 
 export default function App() {
   return (
@@ -24,7 +25,7 @@ export default function App() {
             path="/board/:id"
             element={
               <ProtectedRoute>
-                <div className="text-white">Board</div>
+                <Board />
               </ProtectedRoute>
             }
           />

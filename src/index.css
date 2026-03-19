@@ -9,3 +9,23 @@
     @apply min-h-screen;
   }
 }
+
+@layer utilities {
+  .kanban-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #374151 transparent;
+  }
+
+  .kanban-scroll::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .kanban-scroll::-webkit-scrollbar-thumb {
+    background: #374151;
+    border-radius: 99px;
+  }
+
+  .kanban-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
