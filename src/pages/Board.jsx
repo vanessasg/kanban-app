@@ -8,12 +8,17 @@ import {
   useSensors,
   closestCorners,
 } from "@dnd-kit/core";
-import { arrayMove } from "@dnd-kit/sortable";
+import {
+  arrayMove,
+  SortableContext,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import {
   subscribeToColumns,
   createColumn,
   moveTask,
   reorderTasks,
+  reorderColumns,
 } from "../services/boardService";
 import Column from "../components/board/Column";
 import TaskCard from "../components/task/TaskCard";
@@ -60,18 +65,29 @@ const handleTasksChange = useCallback((columnId, tasks) => {
 
     if (!over) return;
 
+    const activeType = active.data.current?.type;
+
+    // riordino colonne
+    if (activeType === "column") {
+      const oldIndex = columns.findIndex((col) => col.id === active.id);
+      const newIndex = columns.findIndex((col) => col.id === over.id);
+      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+      const reordered = arrayMove(columns, oldIndex, newIndex);
+      await reorderColumns(boardId, reordered);
+      return;
+    }
+
+    // riordino / spostamento task
     const fromColumnId = active.data.current?.columnId;
     const task = active.data.current?.task;
     if (!task || !fromColumnId) return;
 
-    // over può essere una colonna o un task
     const overIsColumn = columns.some((col) => col.id === over.id);
     const toColumnId = overIsColumn ? over.id : over.data.current?.columnId;
 
     if (!toColumnId) return;
 
     if (fromColumnId === toColumnId) {
-      // riordino nella stessa colonna
       const columnTasks = allTasks[fromColumnId] ?? [];
       const oldIndex = columnTasks.findIndex((t) => t.id === active.id);
       const newIndex = columnTasks.findIndex((t) => t.id === over.id);
@@ -133,25 +149,30 @@ const handleTasksChange = useCallback((columnId, tasks) => {
         onDragEnd={handleDragEnd}
       >
         <div className="kanban-scroll flex gap-4 p-6 overflow-x-auto flex-1 items-start">
-          {columns.length === 0 ? (
-            <div className="flex items-center justify-center w-full h-full text-gray-500">
-              <div className="text-center">
-                <p className="text-lg">Nessuna colonna ancora.</p>
-                <p className="text-sm mt-1">
-                  Aggiungi la prima colonna per iniziare.
-                </p>
+          <SortableContext
+            items={columns.map((col) => col.id)}
+            strategy={horizontalListSortingStrategy}
+          >
+            {columns.length === 0 ? (
+              <div className="flex items-center justify-center w-full h-full text-gray-500">
+                <div className="text-center">
+                  <p className="text-lg">Nessuna colonna ancora.</p>
+                  <p className="text-sm mt-1">
+                    Aggiungi la prima colonna per iniziare.
+                  </p>
+                </div>
               </div>
-            </div>
-          ) : (
-            columns.map((col) => (
-              <Column
-                key={col.id}
-                column={col}
-                boardId={boardId}
-                onTasksChange={handleTasksChange}
-              />
-            ))
-          )}
+            ) : (
+              columns.map((col) => (
+                <Column
+                  key={col.id}
+                  column={col}
+                  boardId={boardId}
+                  onTasksChange={handleTasksChange}
+                />
+              ))
+            )}
+          </SortableContext>
         </div>
 
         <DragOverlay>

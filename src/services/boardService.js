@@ -144,3 +144,13 @@ export async function reorderTasks(boardId, columnId, tasks) {
   });
   return batch.commit();
 }
+
+export async function reorderColumns(boardId, columns) {
+  const batch = writeBatch(db);
+  columns.forEach((col, index) => {
+    batch.update(doc(db, "boards", boardId, "columns", col.id), {
+      order: index,
+    });
+  });
+  return batch.commit();
+}

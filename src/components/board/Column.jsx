@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
+  useSortable,
 } from "@dnd-kit/sortable";
+import { useDroppable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import {
   subscribeToTasks,
   createTask,
@@ -12,7 +14,7 @@ import {
 } from "../../services/boardService";
 import TaskCard from "../task/TaskCard";
 import TaskModal from "../task/TaskModal";
-import ConfirmModal from '../ui/ConfirmModal'
+import ConfirmModal from "../ui/ConfirmModal";
 
 export default function Column({ column, boardId, onTasksChange }) {
   const [tasks, setTasks] = useState([]);
@@ -20,11 +22,30 @@ export default function Column({ column, boardId, onTasksChange }) {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [colTitle, setColTitle] = useState(column.title);
-
   const [selectedTask, setSelectedTask] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
-  const { setNodeRef, isOver } = useDroppable({ id: column.id });
+  // useSortable per il drag della colonna
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setSortableRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: column.id,
+    data: { type: "column" },
+  });
+
+  // useDroppable per ricevere i task
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id: column.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   useEffect(() => {
     const unsub = subscribeToTasks(boardId, column.id, (tasks) => {
@@ -59,10 +80,22 @@ export default function Column({ column, boardId, onTasksChange }) {
 
   return (
     <div
-      className={`flex-shrink-0 w-80 bg-gray-900 border rounded-xl flex flex-col max-h-[calc(100vh-120px)] transition-colors ${isOver ? "border-indigo-500" : "border-gray-800"}`}
+      ref={setSortableRef}
+      style={style}
+      className={`flex-shrink-0 w-80 bg-gray-900 border rounded-xl flex flex-col max-h-[calc(100vh-120px)] transition-colors ${
+        isDragging
+          ? "border-indigo-500"
+          : isOver
+            ? "border-indigo-500"
+            : "border-gray-800"
+      }`}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+      {/* Header — drag listeners solo qui */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex items-center justify-between px-4 py-3 border-b border-gray-800 cursor-grab active:cursor-grabbing"
+      >
         {editingTitle ? (
           <input
             className="flex-1 bg-gray-800 border border-indigo-500 rounded px-2 py-1 text-sm text-white focus:outline-none"
@@ -92,9 +125,9 @@ export default function Column({ column, boardId, onTasksChange }) {
         </button>
       </div>
 
-      {/* Tasks */}
+      {/* Tasks — drop zone */}
       <div
-        ref={setNodeRef}
+        ref={setDropRef}
         className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 min-h-[60px]"
       >
         <SortableContext
