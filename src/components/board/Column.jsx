@@ -16,7 +16,7 @@ import TaskCard from "../task/TaskCard";
 import TaskModal from "../task/TaskModal";
 import ConfirmModal from "../ui/ConfirmModal";
 
-export default function Column({ column, boardId, onTasksChange }) {
+export default function Column({ column, boardId, onTasksChange, search }) {
   const [tasks, setTasks] = useState([]);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -77,6 +77,9 @@ export default function Column({ column, boardId, onTasksChange }) {
       onConfirm: async () => await deleteColumn(boardId, column.id),
     });
   };
+  const filteredTasks = tasks.filter((t) =>
+    t.title.toLowerCase().includes(search.toLowerCase()),
+  );
 
   return (
     <div
@@ -131,10 +134,10 @@ export default function Column({ column, boardId, onTasksChange }) {
         className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 min-h-[60px]"
       >
         <SortableContext
-          items={tasks.map((t) => t.id)}
+          items={filteredTasks.map((t) => t.id)}
           strategy={verticalListSortingStrategy}
         >
-          {tasks.map((task) => (
+          {filteredTasks.map((task) => (
             <TaskCard
               key={task.id}
               task={task}

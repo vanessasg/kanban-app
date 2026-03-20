@@ -22,6 +22,7 @@ import {
   reorderBoards,
 } from "../services/boardService";
 import ConfirmModal from "../components/ui/ConfirmModal";
+import Header from "../components/ui/Header";
 
 const ACCENT_COLORS = [
   "#6366f1",
@@ -66,7 +67,7 @@ function BoardCard({ board, index, onOpen, onDelete }) {
     <div
       ref={setNodeRef}
       style={style}
-      className="relative bg-gray-900 border border-gray-800 hover:border-gray-600 rounded-xl overflow-hidden cursor-pointer transition-all hover:-translate-y-0.5 group"
+      className="relative bg-gray-900 border border-gray-800 hover:border-gray-600 rounded-xl overflow-hidden cursor-pointer transition-all hover:-translate-y-0.5 group min-w-[200px]"
       onClick={onOpen}
     >
       {/* Accent bar */}
@@ -130,6 +131,11 @@ export default function Boards() {
   const [creating, setCreating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
+  const [search, setSearch] = useState("");
+
+  const filteredBoards = boards.filter((b) =>
+    b.title.toLowerCase().includes(search.toLowerCase()),
+  );
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   );
@@ -168,21 +174,33 @@ export default function Boards() {
   };
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-gray-800 px-6 h-14 flex items-center justify-between">
-        <span className="font-semibold tracking-tight">Kanban</span>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-400">
-            {user.displayName || user.email}
-          </span>
-          <button
-            onClick={handleLogout}
-            className="text-sm text-gray-400 hover:text-white border border-gray-700 hover:border-gray-600 px-3 py-1.5 rounded-lg transition-colors"
-          >
-            Esci
-          </button>
+    <div className="min-h-screen flex flex-col">
+      <Header user={user} onLogout={handleLogout}>
+        <div className="flex justify-center">
+          <div className="relative max-w-sm">
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cerca board…"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors"
+            />
+          </div>
         </div>
-      </header>
+      </Header>
 
       <main className="max-w-5xl mx-auto px-6 py-10">
         <div className="flex items-center justify-between mb-8">
@@ -224,6 +242,10 @@ export default function Boards() {
               Crea la tua prima board per iniziare!
             </p>
           </div>
+        ) : filteredBoards.length === 0 ? (
+          <div className="text-center py-24 text-gray-500">
+            <p className="text-lg">Nessun risultato per "{search}"</p>
+          </div>
         ) : (
           <DndContext
             sensors={sensors}
@@ -231,11 +253,11 @@ export default function Boards() {
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={boards.map((b) => b.id)}
+              items={filteredBoards.map((b) => b.id)}
               strategy={rectSortingStrategy}
             >
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {boards.map((board, i) => (
+                {filteredBoards.map((board, i) => (
                   <BoardCard
                     key={board.id}
                     board={board}

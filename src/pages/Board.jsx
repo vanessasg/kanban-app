@@ -23,6 +23,9 @@ import {
 import Column from "../components/board/Column";
 import TaskCard from "../components/task/TaskCard";
 
+import Header from "../components/ui/Header";
+import { useAuth } from "../context/AuthContext";
+
 export default function Board() {
   const { id: boardId } = useParams();
   const navigate = useNavigate();
@@ -32,6 +35,14 @@ export default function Board() {
   const [activeTask, setActiveTask] = useState(null);
 
   const [allTasks, setAllTasks] = useState({});
+  const [search, setSearch] = useState("");
+  
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -103,20 +114,44 @@ const handleTasksChange = useCallback((columnId, tasks) => {
   return (
     <div className="h-screen flex flex-col">
       {/* Header */}
-      <header className="border-b border-gray-800 px-6 h-14 flex items-center justify-between flex-shrink-0">
-        <button
-          onClick={() => navigate("/boards")}
-          className="text-sm text-gray-400 hover:text-white border border-gray-700 hover:border-gray-600 px-3 py-1.5 rounded-lg transition-colors"
-        >
-          ← Board
-        </button>
-        <button
-          onClick={() => setShowColForm((v) => !v)}
-          className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          {showColForm ? "Annulla" : "+ Colonna"}
-        </button>
-      </header>
+      <Header user={user} onLogout={handleLogout}>
+        <div className="flex items-center justify-center gap-3">
+          <button
+            onClick={() => navigate("/boards")}
+            className="text-sm text-gray-400 hover:text-white border border-gray-700 hover:border-gray-600 px-3 py-1.5 rounded-lg transition-colors flex-shrink-0"
+          >
+            ← Board
+          </button>
+          <div className="relative max-w-xs w-full">
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cerca task…"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors"
+            />
+          </div>
+          <button
+            onClick={() => setShowColForm((v) => !v)}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex-shrink-0"
+          >
+            {showColForm ? "Annulla" : "+ Colonna"}
+          </button>
+        </div>
+      </Header>
 
       {/* Add column form */}
       {showColForm && (
@@ -169,6 +204,7 @@ const handleTasksChange = useCallback((columnId, tasks) => {
                   column={col}
                   boardId={boardId}
                   onTasksChange={handleTasksChange}
+                  search={search}
                 />
               ))
             )}
