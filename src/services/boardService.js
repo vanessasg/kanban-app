@@ -20,7 +20,7 @@ export function subscribeToBoards(userId, callback) {
   const q = query(
     collection(db, "boards"),
     where("uid", "==", userId),
-    orderBy("createdAt", "desc"),
+    orderBy("order", "asc"),
   );
   return onSnapshot(q, (snap) =>
     callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
@@ -37,6 +37,14 @@ export async function createBoard(userId, title) {
 
 export async function deleteBoard(boardId) {
   return deleteDoc(doc(db, "boards", boardId));
+}
+
+export async function reorderBoards(userId, boards) {
+  const batch = writeBatch(db);
+  boards.forEach((board, index) => {
+    batch.update(doc(db, "boards", board.id), { order: index });
+  });
+  return batch.commit();
 }
 
 // ─── Columns ──────────────────────────────────────────────
