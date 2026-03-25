@@ -1,4 +1,21 @@
+import { useState, useRef, useEffect } from "react";
+import ProfileModal from "../ui/ProfileModal";
+
 export default function Header({ user, onLogout, children }) {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const dropdownRef = useRef();
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
   return (
     <header className="border-b border-gray-800 px-6 h-16 flex items-center justify-between gap-6">
       <div className="flex items-center gap-3 flex-shrink-0">
@@ -19,7 +36,7 @@ export default function Header({ user, onLogout, children }) {
             <rect x="14" y="14" width="7" height="7" />
           </svg>
         </div>
-        <span className="font-semibold tracking-tight">Kanban</span>
+        <span className="font-semibold tracking-tight hidden sm:block">Kanban</span>
       </div>
 
       {/* Slot centrale — search, back button, ecc. */}
@@ -33,16 +50,42 @@ export default function Header({ user, onLogout, children }) {
             {user.displayName || user.email}
           </p>
         </div>
-        <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-sm font-semibold flex-shrink-0">
-          {(user.displayName || user.email).charAt(0).toUpperCase()}
+
+        {/* Avatar + dropdown */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setDropdownOpen((v) => !v)}
+            className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-sm font-semibold hover:bg-indigo-500 transition-colors"
+          >
+            {(user.displayName || user.email).charAt(0).toUpperCase()}
+          </button>
+
+          {dropdownOpen && (
+            <div className="absolute right-0 top-10 w-44 bg-gray-900 border border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden">
+              <button
+                onClick={() => {
+                  setShowProfile(true);
+                  setDropdownOpen(false);
+                }}
+                className="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+              >
+                Profilo
+              </button>
+              <div className="border-t border-gray-800" />
+              <button
+                onClick={onLogout}
+                className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-gray-800 transition-colors"
+              >
+                Esci
+              </button>
+            </div>
+          )}
         </div>
-        <button
-          onClick={onLogout}
-          className="text-sm text-gray-400 hover:text-white border border-gray-700 hover:border-gray-600 px-3 py-1.5 rounded-lg transition-colors"
-        >
-          Esci
-        </button>
       </div>
+
+      {showProfile && (
+        <ProfileModal user={user} onClose={() => setShowProfile(false)} />
+      )}
     </header>
   );
 }

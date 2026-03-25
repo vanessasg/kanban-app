@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   DndContext,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   closestCorners,
@@ -20,6 +21,7 @@ import {
   createBoard,
   deleteBoard,
   reorderBoards,
+  updateBoard
 } from "../services/boardService";
 import ConfirmModal from "../components/ui/ConfirmModal";
 import Header from "../components/ui/Header";
@@ -46,6 +48,9 @@ function formatDate(ts) {
 }
 
 function BoardCard({ board, index, onOpen, onDelete }) {
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [title, setTitle] = useState(board.title);
+
   const {
     attributes,
     listeners,
@@ -68,9 +73,8 @@ function BoardCard({ board, index, onOpen, onDelete }) {
       ref={setNodeRef}
       style={style}
       className="relative bg-gray-900 border border-gray-800 hover:border-gray-600 rounded-xl overflow-hidden cursor-pointer transition-all hover:-translate-y-0.5 group min-w-[200px]"
-      onClick={onOpen}
+      onClick={() => !editingTitle && onOpen()}
     >
-      {/* Accent bar */}
       <div className="h-1 w-full" style={{ background: accent }} />
 
       <div className="p-5 flex flex-col gap-3">
@@ -78,7 +82,7 @@ function BoardCard({ board, index, onOpen, onDelete }) {
         <div
           {...attributes}
           {...listeners}
-          className="absolute top-3 right-8 text-gray-600 hover:text-gray-400 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute top-3 right-8 text-gray-600 hover:text-gray-400 cursor-grab active:cursor-grabbing opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
           onClick={(e) => e.stopPropagation()}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -91,9 +95,54 @@ function BoardCard({ board, index, onOpen, onDelete }) {
           </svg>
         </div>
 
-        <h2 className="font-semibold text-sm text-white pr-6 leading-snug">
-          {board.title}
-        </h2>
+        {editingTitle ? (
+          <input
+            className="text-sm font-semibold bg-transparent border-b border-indigo-500 focus:outline-none text-white pr-6"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={async () => {
+              if (title.trim())
+                await updateBoard(board.id, { title: title.trim() });
+              setEditingTitle(false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.target.blur();
+              if (e.key === "Escape") {
+                setTitle(board.title);
+                setEditingTitle(false);
+              }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            autoFocus
+          />
+        ) : (
+          <div className="flex items-center gap-1.5 group/title pr-6">
+            <h2 className="font-semibold text-sm text-white leading-snug">
+              {title}
+            </h2>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditingTitle(true);
+              }}
+              className="text-gray-600 hover:text-indigo-400 opacity-100 group-hover/title:opacity-100 transition-all flex-shrink-0"
+            >
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+            </button>
+          </div>
+        )}
 
         <p className="text-xs text-gray-500">
           Creata il {formatDate(board.createdAt)}
@@ -106,7 +155,7 @@ function BoardCard({ board, index, onOpen, onDelete }) {
           e.stopPropagation();
           onDelete();
         }}
-        className="absolute top-3 right-3 text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all text-lg leading-none"
+        className="absolute top-3 right-3 text-gray-600 hover:text-red-400 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -138,6 +187,9 @@ export default function Boards() {
   );
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 5 },
+    }),
   );
 
   useEffect(() => {
@@ -176,7 +228,7 @@ export default function Boards() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header user={user} onLogout={handleLogout}>
-        <div className="flex justify-center">
+        <div className="flex justify-center items-center gap-3">
           <div className="relative max-w-sm">
             <svg
               className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
@@ -199,17 +251,25 @@ export default function Boards() {
               className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors"
             />
           </div>
+          <button
+            onClick={() => setShowForm((v) => !v)}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors hidden sm:inline-flex"
+          >
+            {showForm ? "Annulla" : "+ Nuova board"}
+          </button>
         </div>
       </Header>
 
-      <main className="max-w-5xl mx-auto px-6 py-10">
-        <div className="flex items-center justify-between mb-8">
+      <main className="w-full max-w-5xl mx-auto px-6 py-10">
+        <div
+          className={`flex items-center justify-between  ${boards.length === 0 ? "flex-col gap-10 mb-0" : "mb-8"}`}
+        >
           <h1 className="text-2xl font-semibold tracking-tight">
             Le mie board
           </h1>
           <button
             onClick={() => setShowForm((v) => !v)}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors inline-flex sm:hidden"
           >
             {showForm ? "Annulla" : "+ Nuova board"}
           </button>
@@ -236,7 +296,7 @@ export default function Boards() {
         )}
 
         {boards.length === 0 ? (
-          <div className="text-center py-24 text-gray-500">
+          <div className="text-center py-10 sm:py-24 text-gray-500">
             <p className="text-lg">Nessuna board ancora.</p>
             <p className="text-sm mt-1">
               Crea la tua prima board per iniziare!
@@ -256,7 +316,7 @@ export default function Boards() {
               items={filteredBoards.map((b) => b.id)}
               strategy={rectSortingStrategy}
             >
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {filteredBoards.map((board, i) => (
                   <BoardCard
                     key={board.id}

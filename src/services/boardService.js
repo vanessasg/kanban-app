@@ -5,6 +5,7 @@ import {
   deleteDoc,
   updateDoc,
   getDocs,
+  getDoc,
   onSnapshot,
   query,
   where,
@@ -28,9 +29,13 @@ export function subscribeToBoards(userId, callback) {
 }
 
 export async function createBoard(userId, title) {
+  const snap = await getDocs(
+    query(collection(db, "boards"), where("uid", "==", userId)),
+  );
   return addDoc(collection(db, "boards"), {
     uid: userId,
     title,
+    order: snap.size,
     createdAt: serverTimestamp(),
   });
 }
@@ -161,4 +166,14 @@ export async function reorderColumns(boardId, columns) {
     });
   });
   return batch.commit();
+}
+
+export async function getBoard(boardId) {
+  const snap = await getDoc(doc(db, "boards", boardId));
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...snap.data() };
+}
+
+export async function updateBoard(boardId, data) {
+  return updateDoc(doc(db, "boards", boardId), data);
 }

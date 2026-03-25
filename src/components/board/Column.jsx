@@ -85,7 +85,7 @@ export default function Column({ column, boardId, onTasksChange, search }) {
     <div
       ref={setSortableRef}
       style={style}
-      className={`flex-shrink-0 w-80 bg-gray-900 border rounded-xl flex flex-col max-h-[calc(100vh-120px)] transition-colors ${
+      className={`flex-shrink-0 w-full sm:w-80 bg-gray-900 border rounded-xl flex flex-col max-h-[calc(100vh-120px)] transition-colors ${
         isDragging
           ? "border-indigo-500"
           : isOver

@@ -4,6 +4,7 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   closestCorners,
@@ -19,6 +20,8 @@ import {
   moveTask,
   reorderTasks,
   reorderColumns,
+  getBoard,
+  updateBoard,
 } from "../services/boardService";
 import Column from "../components/board/Column";
 import TaskCard from "../components/task/TaskCard";
@@ -36,7 +39,10 @@ export default function Board() {
 
   const [allTasks, setAllTasks] = useState({});
   const [search, setSearch] = useState("");
-  
+
+  const [boardTitle, setBoardTitle] = useState("");
+  const [editingTitle, setEditingTitle] = useState(false);
+
   const { user, logout } = useAuth();
 
   const handleLogout = async () => {
@@ -46,6 +52,9 @@ export default function Board() {
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 5 },
+    }),
   );
 
   useEffect(() => {
@@ -53,9 +62,15 @@ export default function Board() {
     return unsub;
   }, [boardId]);
 
-const handleTasksChange = useCallback((columnId, tasks) => {
-  setAllTasks((prev) => ({ ...prev, [columnId]: tasks }));
-}, []);
+  useEffect(() => {
+    getBoard(boardId).then((board) => {
+      if (board) setBoardTitle(board.title);
+    });
+  }, [boardId]);
+
+  const handleTasksChange = useCallback((columnId, tasks) => {
+    setAllTasks((prev) => ({ ...prev, [columnId]: tasks }));
+  }, []);
 
   const handleAddColumn = async (e) => {
     e.preventDefault();
@@ -120,7 +135,7 @@ const handleTasksChange = useCallback((columnId, tasks) => {
             onClick={() => navigate("/boards")}
             className="text-sm text-gray-400 hover:text-white border border-gray-700 hover:border-gray-600 px-3 py-1.5 rounded-lg transition-colors flex-shrink-0"
           >
-            ← Board
+            ← <span className="hidden sm:inline">Board</span>
           </button>
           <div className="relative max-w-xs w-full">
             <svg
@@ -146,12 +161,70 @@ const handleTasksChange = useCallback((columnId, tasks) => {
           </div>
           <button
             onClick={() => setShowColForm((v) => !v)}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex-shrink-0"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex-shrink-0 hidden sm:inline-flex"
           >
             {showColForm ? "Annulla" : "+ Colonna"}
           </button>
         </div>
       </Header>
+
+      <div
+        className={`max-w-5xl w-full mx-auto px-6 pt-10 flex items-center justify-between  ${columns.length === 0 ? "flex-col gap-10 mb-0" : "mb-8"}`}
+      >
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {editingTitle ? (
+            <input
+              className="text-2xl font-semibold tracking-tight bg-transparent border-b border-indigo-500 focus:outline-none text-white"
+              value={boardTitle}
+              onChange={(e) => setBoardTitle(e.target.value)}
+              onBlur={async () => {
+                if (boardTitle.trim())
+                  await updateBoard(boardId, { title: boardTitle.trim() });
+                setEditingTitle(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.target.blur();
+                if (e.key === "Escape") setEditingTitle(false);
+              }}
+              autoFocus
+            />
+          ) : (
+            <div
+              className="flex items-center gap-2 group cursor-pointer"
+              onClick={() => setEditingTitle(true)}
+              title="Click per rinominare"
+            >
+              <h1
+                className="text-2xl font-semibold tracking-tight cursor-pointer"
+                onClick={() => setEditingTitle(true)}
+                title="Click per rinominare"
+              >
+                {boardTitle}
+              </h1>
+              <svg
+                className="text-gray-600 group-hover:text-indigo-400 transition-colors flex-shrink-0"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+            </div>
+          )}
+        </h1>
+        <button
+          onClick={() => setShowColForm((v) => !v)}
+          className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors inline-flex sm:hidden"
+        >
+          {showColForm ? "Annulla" : "+ Colonna"}
+        </button>
+      </div>
 
       {/* Add column form */}
       {showColForm && (
@@ -183,13 +256,13 @@ const handleTasksChange = useCallback((columnId, tasks) => {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="kanban-scroll flex gap-4 p-6 overflow-x-auto flex-1 items-start">
+        <div className="kanban-scroll flex flex-col sm:flex-row gap-4 p-6 overflow-x-auto flex-1 items-start">
           <SortableContext
             items={columns.map((col) => col.id)}
             strategy={horizontalListSortingStrategy}
           >
             {columns.length === 0 ? (
-              <div className="flex items-center justify-center w-full h-full text-gray-500">
+              <div className="flex items-center justify-center w-full py-10 sm:py-24 text-gray-500">
                 <div className="text-center">
                   <p className="text-lg">Nessuna colonna ancora.</p>
                   <p className="text-sm mt-1">
