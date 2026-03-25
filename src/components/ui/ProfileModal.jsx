@@ -7,6 +7,8 @@ import {
   reauthenticateWithCredential,
   EmailAuthProvider,
   deleteUser,
+  GoogleAuthProvider,
+  reauthenticateWithPopup,
 } from "firebase/auth";
 import { auth } from "../../services/firebase";
 import ConfirmModal from "./ConfirmModal";
@@ -41,10 +43,20 @@ export default function ProfileModal({ user, onClose }) {
   // Delete
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteError, setDeleteError] = useState("");
+  
+  const isGoogleUser = user.providerData.some(
+    (p) => p.providerId === "google.com",
+  );
 
-  const reauth = (password) => {
-    const credential = EmailAuthProvider.credential(user.email, password);
-    return reauthenticateWithCredential(auth.currentUser, credential);
+  const reauth = async (password = null) => {
+
+    if (isGoogleUser) {
+      const provider = new GoogleAuthProvider();
+      return reauthenticateWithPopup(auth.currentUser, provider);
+    } else {
+      const credential = EmailAuthProvider.credential(user.email, password);
+      return reauthenticateWithCredential(auth.currentUser, credential);
+    }
   };
 
   const handleUpdateName = async () => {
@@ -210,57 +222,62 @@ export default function ProfileModal({ user, onClose }) {
             </form>
           )}
 
-          {activeTab === "Email" && (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleUpdateEmail();
-              }}
-              className="flex flex-col gap-4"
-            >
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                  Nuova email
-                </label>
-                <input
-                  type="email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  autoComplete="username"
-                  className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
-                  autoFocus
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                  Password attuale
-                </label>
-                <input
-                  type="password"
-                  value={emailPassword}
-                  onChange={(e) => setEmailPassword(e.target.value)}
-                  autoComplete="current-password"
-                  placeholder="Conferma identità"
-                  className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors"
-                />
-              </div>
-              {emailError && (
-                <p className="text-xs text-red-400">{emailError}</p>
-              )}
-              {emailSuccess && (
-                <p className="text-xs text-green-400">
-                  Controlla la tua email per confermare la modifica.
-                </p>
-              )}
-              <button
-                type="submit"
-                disabled={emailSaving}
-                className="self-end bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          {activeTab === "Email" &&
+            (isGoogleUser ? (
+              <p className="text-xs text-center py-4 text-gray-400">
+                L’email è gestita dal tuo account Google.
+              </p>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleUpdateEmail();
+                }}
+                className="flex flex-col gap-4"
               >
-                {emailSaving ? "Salvataggio…" : "Salva"}
-              </button>
-            </form>
-          )}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                    Nuova email
+                  </label>
+                  <input
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    autoComplete="username"
+                    className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                    autoFocus
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                    Password attuale
+                  </label>
+                  <input
+                    type="password"
+                    value={emailPassword}
+                    onChange={(e) => setEmailPassword(e.target.value)}
+                    autoComplete="current-password"
+                    placeholder="Conferma identità"
+                    className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                  />
+                </div>
+                {emailError && (
+                  <p className="text-xs text-red-400">{emailError}</p>
+                )}
+                {emailSuccess && (
+                  <p className="text-xs text-green-400">
+                    Controlla la tua email per confermare la modifica.
+                  </p>
+                )}
+                <button
+                  type="submit"
+                  disabled={emailSaving}
+                  className="self-end bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                >
+                  {emailSaving ? "Salvataggio…" : "Salva"}
+                </button>
+              </form>
+            ))}
           {pendingEmail && (
             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 flex flex-col gap-2">
               <p className="text-xs text-yellow-400">
@@ -302,63 +319,68 @@ export default function ProfileModal({ user, onClose }) {
             </div>
           )}
 
-          {activeTab === "Password" && (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleUpdatePassword();
-              }}
-              className="flex flex-col gap-4"
-            >
-              <input
-                type="text"
-                name="username"
-                autoComplete="username"
-                value={user.email}
-                readOnly
-                className="hidden"
-              />
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                  Password attuale
-                </label>
-                <input
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  autoComplete="new-password"
-                  className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
-                  autoFocus
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                  Nuova password
-                </label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  autoComplete="new-password"
-                  placeholder="Min. 6 caratteri"
-                  className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors"
-                />
-              </div>
-              {passwordError && (
-                <p className="text-xs text-red-400">{passwordError}</p>
-              )}
-              {passwordSuccess && (
-                <p className="text-xs text-green-400">Password aggiornata!</p>
-              )}
-              <button
-                type="submit"
-                disabled={passwordSaving}
-                className="self-end bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          {activeTab === "Password" &&
+            (isGoogleUser ? (
+              <p className="text-xs text-center py-4 text-gray-400">
+                Non hai una password. Accedi tramite Google.
+              </p>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleUpdatePassword();
+                }}
+                className="flex flex-col gap-4"
               >
-                {passwordSaving ? "Salvataggio…" : "Salva"}
-              </button>
-            </form>
-          )}
+                <input
+                  type="text"
+                  name="username"
+                  autoComplete="username"
+                  value={user.email}
+                  readOnly
+                  className="hidden"
+                />
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                    Password attuale
+                  </label>
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    autoComplete="new-password"
+                    className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                    autoFocus
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                    Nuova password
+                  </label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    autoComplete="new-password"
+                    placeholder="Min. 6 caratteri"
+                    className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                  />
+                </div>
+                {passwordError && (
+                  <p className="text-xs text-red-400">{passwordError}</p>
+                )}
+                {passwordSuccess && (
+                  <p className="text-xs text-green-400">Password aggiornata!</p>
+                )}
+                <button
+                  type="submit"
+                  disabled={passwordSaving}
+                  className="self-end bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                >
+                  {passwordSaving ? "Salvataggio…" : "Salva"}
+                </button>
+              </form>
+            ))}
 
           {activeTab === "Account" && (
             <form
@@ -386,25 +408,32 @@ export default function ProfileModal({ user, onClose }) {
                     verranno eliminate.
                   </p>
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                    Conferma con la tua password
-                  </label>
-                  <input
-                    type="password"
-                    value={deletePassword}
-                    onChange={(e) => setDeletePassword(e.target.value)}
-                    autoComplete="current-password"
-                    placeholder="Password attuale"
-                    className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500 transition-colors"
-                  />
-                </div>
+                {!isGoogleUser && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                      Conferma con la tua password
+                    </label>
+                    <input
+                      type="password"
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                      autoComplete="current-password"
+                      placeholder="Password attuale"
+                      className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500 transition-colors"
+                    />
+                  </div>
+                )}
+                {isGoogleUser && (
+                  <p className="text-xs text-gray-400">
+                    Ti verrà chiesto di confermare tramite Google.
+                  </p>
+                )}
                 {deleteError && (
                   <p className="text-xs text-red-400">{deleteError}</p>
                 )}
                 <button
                   type="submit"
-                  disabled={!deletePassword}
+                  disabled={!isGoogleUser && !deletePassword}
                   className="self-start bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
                 >
                   Elimina account
