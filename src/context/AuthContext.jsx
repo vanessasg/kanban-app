@@ -5,6 +5,9 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  sendEmailVerification,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from "firebase/auth";
 import { auth } from "../services/firebase";
 
@@ -29,16 +32,33 @@ export function AuthProvider({ children }) {
       password,
     );
     await updateProfile(user, { displayName });
+    await sendEmailVerification(user, {
+      url: window.location.origin + import.meta.env.BASE_URL + "#/login",
+    });
     return user;
   };
 
-  const login = (email, password) =>
-    signInWithEmailAndPassword(auth, email, password);
+  const login = async (email, password) => {
+    const { user } = await signInWithEmailAndPassword(auth, email, password);
+    if (!user.emailVerified) {
+      await signOut(auth);
+      throw { code: "auth/email-not-verified" };
+    }
+    return user;
+  };
+
+  const loginWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    const { user } = await signInWithPopup(auth, provider);
+    return user;
+  };
 
   const logout = () => signOut(auth);
 
   return (
-    <AuthContext.Provider value={{ user, loading, register, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, loading, register, login, loginWithGoogle, logout }}
+    >
       {!loading && children}
     </AuthContext.Provider>
   );
