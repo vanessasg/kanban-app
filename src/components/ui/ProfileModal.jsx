@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   updateProfile,
-  updateEmail,
+  // updateEmail,
+  verifyBeforeUpdateEmail,
   updatePassword,
   reauthenticateWithCredential,
   EmailAuthProvider,
@@ -28,6 +29,7 @@ export default function ProfileModal({ user, onClose }) {
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailSuccess, setEmailSuccess] = useState(false);
   const [emailError, setEmailError] = useState("");
+  const [pendingEmail, setPendingEmail] = useState(null);
 
   // Password
   const [currentPassword, setCurrentPassword] = useState("");
@@ -68,10 +70,11 @@ export default function ProfileModal({ user, onClose }) {
     setEmailError("");
     try {
       await reauth(emailPassword);
-      await updateEmail(auth.currentUser, newEmail.trim());
+      await verifyBeforeUpdateEmail(auth.currentUser, newEmail.trim());
+      setPendingEmail(newEmail.trim());
       setEmailSuccess(true);
       setEmailPassword("");
-      setTimeout(() => setEmailSuccess(false), 2000);
+      setTimeout(() => setEmailSuccess(false), 5000);
     } catch (err) {
       setEmailError(getErrorMessage(err.code));
     } finally {
@@ -108,6 +111,38 @@ export default function ProfileModal({ user, onClose }) {
       setConfirmDelete(false);
     }
   };
+
+  useEffect(() => {
+    if (pendingEmail && user.email === pendingEmail) {
+      setPendingEmail(null); // verifica completata
+    }
+  }, [user, pendingEmail]);
+
+  useEffect(() => {
+    const refreshUser = async () => {
+      if (auth.currentUser) {
+        await auth.currentUser.reload();
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        refreshUser();
+      }
+    };
+
+    const handleFocus = () => {
+      refreshUser();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -213,7 +248,9 @@ export default function ProfileModal({ user, onClose }) {
                 <p className="text-xs text-red-400">{emailError}</p>
               )}
               {emailSuccess && (
-                <p className="text-xs text-green-400">Email aggiornata!</p>
+                <p className="text-xs text-green-400">
+                  Controlla la tua email per confermare la modifica.
+                </p>
               )}
               <button
                 type="submit"
@@ -223,6 +260,46 @@ export default function ProfileModal({ user, onClose }) {
                 {emailSaving ? "Salvataggio…" : "Salva"}
               </button>
             </form>
+          )}
+          {pendingEmail && (
+            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 flex flex-col gap-2">
+              <p className="text-xs text-yellow-400">
+                In attesa di verifica per:{" "}
+                <span className="font-medium">{pendingEmail}</span>
+              </p>
+
+              <p className="text-xs text-gray-400">
+                Controlla la tua email e clicca sul link per confermare la
+                modifica.
+              </p>
+
+              <div className="flex gap-2 mt-1">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await verifyBeforeUpdateEmail(
+                        auth.currentUser,
+                        pendingEmail,
+                      );
+                    } catch (err) {
+                      setEmailError(getErrorMessage(err.code));
+                    }
+                  }}
+                  className="text-xs text-indigo-400 hover:underline"
+                >
+                  Reinvia email
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPendingEmail(null)}
+                  className="text-xs text-gray-400 hover:underline"
+                >
+                  Annulla
+                </button>
+              </div>
+            </div>
           )}
 
           {activeTab === "Password" && (
