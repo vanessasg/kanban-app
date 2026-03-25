@@ -18,7 +18,7 @@ export default function Header({ user, onLogout, children }) {
 
   return (
     <header className="border-b border-gray-800 px-6 h-16 flex items-center justify-between gap-6">
-      <div className="flex items-center gap-3 flex-shrink-0">
+      <div className="flex items-center gap-3 shrink-0">
         <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center">
           <svg
             width="14"
@@ -43,7 +43,7 @@ export default function Header({ user, onLogout, children }) {
       <div className="flex-1">{children}</div>
 
       {/* User */}
-      <div className="flex items-center gap-3 flex-shrink-0">
+      <div className="flex items-center gap-3 shrink-0">
         <div className="text-right hidden sm:block">
           <p className="text-xs text-gray-400">Bentornata,</p>
           <p className="text-sm font-medium">

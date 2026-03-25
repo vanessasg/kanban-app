@@ -72,7 +72,7 @@ function BoardCard({ board, index, onOpen, onDelete }) {
     <div
       ref={setNodeRef}
       style={style}
-      className="relative bg-gray-900 border border-gray-800 hover:border-gray-600 rounded-xl overflow-hidden cursor-pointer transition-all hover:-translate-y-0.5 group min-w-[200px]"
+      className="relative bg-gray-900 border border-gray-800 hover:border-gray-600 rounded-xl overflow-hidden cursor-pointer transition-all hover:-translate-y-0.5 group min-w-50"
       onClick={() => !editingTitle && onOpen()}
     >
       <div className="h-1 w-full" style={{ background: accent }} />
@@ -125,7 +125,7 @@ function BoardCard({ board, index, onOpen, onDelete }) {
                 e.stopPropagation();
                 setEditingTitle(true);
               }}
-              className="text-gray-600 hover:text-indigo-400 opacity-100 group-hover/title:opacity-100 transition-all flex-shrink-0"
+              className="text-gray-600 hover:text-indigo-400 opacity-100 group-hover/title:opacity-100 transition-all shrink-0"
             >
               <svg
                 width="15"

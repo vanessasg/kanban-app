@@ -85,7 +85,7 @@ export default function Column({ column, boardId, onTasksChange, search }) {
     <div
       ref={setSortableRef}
       style={style}
-      className={`flex-shrink-0 w-full sm:w-80 bg-gray-900 border rounded-xl flex flex-col max-h-[calc(100vh-120px)] transition-colors ${
+      className={`shrink-0 w-full sm:w-80 bg-gray-900 border rounded-xl flex flex-col max-h-[calc(100vh-120px)] transition-colors ${
         isDragging
           ? "border-indigo-500"
           : isOver
@@ -131,7 +131,7 @@ export default function Column({ column, boardId, onTasksChange, search }) {
       {/* Tasks — drop zone */}
       <div
         ref={setDropRef}
-        className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 min-h-[60px]"
+        className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 min-h-15"
       >
         <SortableContext
           items={filteredTasks.map((t) => t.id)}

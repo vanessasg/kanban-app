@@ -305,7 +305,7 @@ export default function ProfileModal({ user, onClose }) {
                   }}
                   className="text-xs text-indigo-400 hover:underline"
                 >
-                  Reinvia email
+                  Rinvia email
                 </button>
 
                 <button

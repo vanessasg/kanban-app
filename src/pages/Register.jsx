@@ -147,6 +147,7 @@ export default function Register() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="nome@email.com"
+              autoComplete="username"
               required
               className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors"
             />
@@ -160,6 +161,7 @@ export default function Register() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Min. 6 caratteri"
+              autoComplete="current-password"
               required
               className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors"
             />
