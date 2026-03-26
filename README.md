@@ -140,7 +140,6 @@ npm run deploy
 
 - Il file `.env` non è incluso nella repo per motivi di sicurezza. Ogni sviluppatore deve configurare il proprio progetto Firebase.
 - La verifica email è obbligatoria per il login con email/password. Gli utenti Google bypassano questo step in quanto l'email è già verificata da Google.
-- Prima del deploy, sostituire `updateEmail` con `verifyBeforeUpdateEmail` in `ProfileModal.jsx` per maggiore sicurezza.
 
 ---
 
