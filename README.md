@@ -8,7 +8,7 @@
 
 ## 📸 Overview
 
-Kanban App è uno strumento di gestione task personale, progettato per organizzare il lavoro in board, colonne e card. Il progetto nasce come showcase di React in un contesto full-stack realistico, con autenticazione completa, persistenza dati su Firestore e interazioni drag & drop fluide.
+Kanban App è uno strumento di gestione task personale, progettato per organizzare il lavoro in board, colonne e card. Il progetto nasce come showcase di React in un contesto full-stack realistico, con autenticazione completa, persistenza dati su Firestore, interazioni drag & drop fluide e una vista tabella avanzata con sorting, filtri ed esportazione dati.
 
 ---
 
@@ -17,7 +17,9 @@ Kanban App è uno strumento di gestione task personale, progettato per organizza
 - **Autenticazione** — Registrazione con email/password + verifica email obbligatoria, login con Google OAuth, modifica profilo (nome, email, password), eliminazione account con riautenticazione
 - **Board** — Creazione, rinomina ed eliminazione board, drag & drop per riordinare, ricerca in tempo reale
 - **Colonne** — Aggiunta, rinomina e eliminazione colonne, riordino via drag & drop
-- **Task** — Creazione rapida inline, modal dettaglio con titolo, descrizione, scadenza, tag colorati e assegnatario, spostamento tra colonne e riordino via drag & drop, indicatore visivo scadenza (normale / in scadenza / scaduta)
+- **Task** — Creazione rapida inline, modal dettaglio con titolo, descrizione, date picker, tag colorati e assegnatario, spostamento tra colonne e riordino via drag & drop, indicatore visivo scadenza (normale / in scadenza / scaduta)
+- **Sottotask** — Checklist per ogni task con progress bar e counter sulla card
+- **Vista tabella** — Visualizzazione alternativa con sorting per colonna, filtro live dalla searchbar, paginazione configurabile, selezione multipla con azioni bulk (elimina, sposta colonna, esporta CSV Excel, esporta CSV Numbers, esporta JSON)
 - **Header contestuale** — Ricerca board nella pagina boards, ricerca task nella board singola
 - **Design responsive** — Layout ottimizzato per desktop e mobile
 
@@ -33,6 +35,9 @@ Kanban App è uno strumento di gestione task personale, progettato per organizza
 | **Firebase Auth** | Autenticazione email/password e Google OAuth |
 | **Firestore** | Database cloud NoSQL, sincronizzazione realtime |
 | **@dnd-kit** | Drag & drop accessibile e performante |
+| **@tanstack/react-table** | Vista tabella con sorting, filtri e paginazione |
+| **react-day-picker** | Date picker accessibile e personalizzabile |
+| **react-icons** | Icone UI |
 | **Tailwind CSS v4** | Utility-first styling |
 
 ---
@@ -45,15 +50,21 @@ src/
 │   │   └── ProtectedRoute.jsx    # Redirect se non autenticato
 │   ├── board/
 │   │   └── Column.jsx            # Colonna con drop zone e task list
+│   ├── table/
+│   │   └── TableView.jsx         # Vista tabella con sorting, filtri ed export
 │   ├── task/
-│   │   ├── TaskCard.jsx          # Card draggable con tag e scadenza
+│   │   ├── SubtaskList.jsx       # Checklist sottotask con progress bar
+│   │   ├── TaskCard.jsx          # Card draggable con tag, scadenza e subtask counter
 │   │   └── TaskModal.jsx         # Modal dettaglio e modifica task
 │   └── ui/
 │       ├── ConfirmModal.jsx      # Modal conferma azioni distruttive
+│       ├── DatePicker.jsx        # Date picker con react-day-picker
 │       ├── Header.jsx            # Header riutilizzabile con slot centrale
 │       └── ProfileModal.jsx      # Gestione profilo utente
 ├── context/
 │   └── AuthContext.jsx           # Auth state + Firebase helpers
+├── hooks/
+│   └── useDocumentTitle.js       # Custom hook per titolo pagina dinamico
 ├── pages/
 │   ├── Login.jsx
 │   ├── Register.jsx
@@ -61,7 +72,7 @@ src/
 │   └── Board.jsx
 └── services/
     ├── firebase.js               # Inizializzazione Firebase
-    └── boardService.js           # CRUD Firestore per board, colonne e task
+    └── boardService.js           # CRUD Firestore per board, colonne, task e subtask
 ```
 
 ---
@@ -113,6 +124,11 @@ service cloud.firestore {
         match /tasks/{taskId} {
           allow read, write: if request.auth != null &&
             request.auth.uid == get(/databases/$(database)/documents/boards/$(boardId)).data.uid;
+
+          match /subtasks/{subtaskId} {
+            allow read, write: if request.auth != null &&
+              request.auth.uid == get(/databases/$(database)/documents/boards/$(boardId)).data.uid;
+          }
         }
       }
     }
@@ -123,6 +139,13 @@ service cloud.firestore {
 ### Avvio
 ```bash
 npm run dev
+```
+
+---
+
+### Build
+```bash
+npm run build
 ```
 
 ---
@@ -140,6 +163,7 @@ npm run deploy
 
 - Il file `.env` non è incluso nella repo per motivi di sicurezza. Ogni sviluppatore deve configurare il proprio progetto Firebase.
 - La verifica email è obbligatoria per il login con email/password. Gli utenti Google bypassano questo step in quanto l'email è già verificata da Google.
+- L'esportazione CSV è disponibile in due formati: ottimizzato per Excel (con BOM UTF-8 e direttiva `sep=,`) e per Numbers/Google Sheets.
 
 ---
 
