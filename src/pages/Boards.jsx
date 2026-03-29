@@ -175,7 +175,7 @@ function BoardCard({ board, index, onOpen, onDelete }) {
 export default function Boards() {
   const { user, logout } = useAuth();
   useDocumentTitle(user?.displayName || user?.email)
-  
+
   const navigate = useNavigate();
   const [boards, setBoards] = useState([]);
   const [newTitle, setNewTitle] = useState("");
@@ -279,7 +279,7 @@ export default function Boards() {
         </div>
 
         {showForm && (
-          <form onSubmit={handleCreate} className="flex gap-3 mb-8 max-w-md">
+          <form onSubmit={handleCreate} className={`flex gap-3 mb-8 py-3 max-w-md ${boards.length === 0 ? "mx-auto" : ""}`}>
             <input
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
