@@ -141,6 +141,8 @@ export async function moveTask(boardId, fromColumnId, toColumnId, task) {
     tags: task.tags || [],
     assignee: task.assignee || "",
     order: task.order ?? 0,
+    subtasksCount: task.subtasksCount ?? 0,
+    subtasksCompleted: task.subtasksCompleted ?? 0,
     createdAt: serverTimestamp(),
   });
 

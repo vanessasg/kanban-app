@@ -3,6 +3,7 @@ import { updateTask, deleteTask } from "../../services/boardService";
 import ConfirmModal from "../ui/ConfirmModal";
 import SubtaskList from "./SubtaskList";
 import DatePicker from "../ui/DatePicker";
+import { TAG_COLORS } from "./TAG_COLORS";
 
 const PRESET_TAGS = ["Bug", "Feature", "Design", "Docs", "Urgent", "Review"];
 
@@ -141,8 +142,8 @@ export default function TaskModal({ task, boardId, columnId, onClose }) {
                   onClick={() => toggleTag(tag)}
                   className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
                     tags.includes(tag)
-                      ? "bg-indigo-600/20 border-indigo-500 text-indigo-300"
-                      : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white"
+                      ? TAG_COLORS[tag] ?? "bg-gray-700 text-gray-400 border-gray-600"
+                      : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white "
                   }`}
                 >
                   {tag}

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   DndContext,
@@ -22,13 +22,18 @@ import {
   reorderColumns,
   getBoard,
   updateBoard,
+  subscribeToTasks,
+  deleteTask,
 } from "../services/boardService";
 import Column from "../components/board/Column";
 import TaskCard from "../components/task/TaskCard";
 
 import Header from "../components/ui/Header";
 import { useAuth } from "../context/AuthContext";
-import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
+
+import TableView from "../components/table/TableView";
+import TaskModal from "../components/task/TaskModal";
 
 export default function Board() {
   const { id: boardId } = useParams();
@@ -44,7 +49,11 @@ export default function Board() {
   const [boardTitle, setBoardTitle] = useState("");
   const [editingTitle, setEditingTitle] = useState(false);
 
+  const [view, setView] = useState("kanban"); /* "kanban" o "table" */
+  const [selectedTask, setSelectedTask] = useState(null); /* per la tabella */
+
   const { user, logout } = useAuth();
+
   useDocumentTitle(
     boardTitle ? `${boardTitle} — ${user?.displayName || user?.email}` : null,
   );
@@ -72,9 +81,17 @@ export default function Board() {
     });
   }, [boardId]);
 
-  const handleTasksChange = useCallback((columnId, tasks) => {
-    setAllTasks((prev) => ({ ...prev, [columnId]: tasks }));
-  }, []);
+  useEffect(() => {
+    if (columns.length === 0) return;
+
+    const unsubs = columns.map((col) =>
+      subscribeToTasks(boardId, col.id, (tasks) => {
+        setAllTasks((prev) => ({ ...prev, [col.id]: tasks }));
+      }),
+    );
+
+    return () => unsubs.forEach((unsub) => unsub());
+  }, [boardId, columns]);
 
   const handleAddColumn = async (e) => {
     e.preventDefault();
@@ -128,6 +145,17 @@ export default function Board() {
     }
 
     await moveTask(boardId, fromColumnId, toColumnId, task);
+  };
+
+  // per la tabella
+  const handleDeleteTasks = async (tasks) => {
+    await Promise.all(tasks.map((t) => deleteTask(boardId, t.columnId, t.id)));
+  };
+
+  const handleMoveTasks = async (tasks, toColumnId) => {
+    await Promise.all(
+      tasks.map((t) => moveTask(boardId, t.columnId, toColumnId, t)),
+    );
   };
 
   return (
@@ -230,68 +258,112 @@ export default function Board() {
         </button>
       </div>
 
-      {/* Add column form */}
-      {showColForm && (
-        <form
-          onSubmit={handleAddColumn}
-          className={`flex gap-3 px-6 py-3 border-b border-gray-800 shrink-0 w-full ${columns.length === 0 ? "justify-center" : ""}`}
-        >
-          <input
-            value={newColTitle}
-            onChange={(e) => setNewColTitle(e.target.value)}
-            placeholder="Nome colonna…"
-            autoFocus
-            required
-            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors w-64"
-          />
-          <button
-            type="submit"
-            className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+      <div
+        className={`flex justify-between items-center flex-wrap ${showColForm ? "border-b border-gray-800" : ""}`}
+      >
+        {/* Add column form */}
+        {showColForm && (
+          <form
+            onSubmit={handleAddColumn}
+            className={`flex gap-3 px-6 py-3 shrink-0 w-full sm:w-auto ${columns.length === 0 ? "justify-center" : ""}`}
           >
-            Aggiungi
+            <input
+              value={newColTitle}
+              onChange={(e) => setNewColTitle(e.target.value)}
+              placeholder="Nome colonna…"
+              autoFocus
+              required
+              className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors w-64"
+            />
+            <button
+              type="submit"
+              className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              Aggiungi
+            </button>
+          </form>
+        )}
+        <div className="flex items-center justify-end gap-4 px-6 py-3 sm:p-6 ms-auto">
+          <button
+            onClick={() => setView("kanban")}
+            className={`
+              text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors inline-flex 
+              ${view !== "kanban" ? "bg-gray-600 hover:bg-gray-500" : "bg-indigo-600 hover:bg-indigo-500"}
+            `}
+          >
+            Kanban
           </button>
-        </form>
+          <button
+            onClick={() => setView("table")}
+            className={`
+              text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors inline-flex 
+              ${view !== "table" ? "bg-gray-600 hover:bg-gray-500" : "bg-indigo-600 hover:bg-indigo-500"}
+            `}
+          >
+            Tabella
+          </button>
+        </div>
+      </div>
+
+      {view === "kanban" ? (
+        /* Kanban view */
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="kanban-scroll flex flex-col sm:flex-row gap-4 p-6 overflow-x-auto flex-1 items-start">
+            <SortableContext
+              items={columns.map((col) => col.id)}
+              strategy={horizontalListSortingStrategy}
+            >
+              {columns.length === 0 ? (
+                <div className="flex items-center justify-center w-full py-10 sm:py-24 text-gray-500">
+                  <div className="text-center">
+                    <p className="text-lg">Nessuna colonna ancora.</p>
+                    <p className="text-sm mt-1">
+                      Aggiungi la prima colonna per iniziare.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                columns.map((col) => (
+                  <Column
+                    key={col.id}
+                    column={col}
+                    boardId={boardId}
+                    search={search}
+                  />
+                ))
+              )}
+            </SortableContext>
+          </div>
+
+          <DragOverlay>
+            {activeTask && <TaskCard task={activeTask} />}
+          </DragOverlay>
+        </DndContext>
+      ) : (
+        <TableView
+          columns={columns}
+          allTasks={allTasks}
+          onRowClick={(task) => setSelectedTask(task)}
+          onDeleteTasks={handleDeleteTasks}
+          onMoveTasks={handleMoveTasks}
+          search={search}
+          boardId={boardId}
+        />
       )}
 
-      {/* Columns */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="kanban-scroll flex flex-col sm:flex-row gap-4 p-6 overflow-x-auto flex-1 items-start">
-          <SortableContext
-            items={columns.map((col) => col.id)}
-            strategy={horizontalListSortingStrategy}
-          >
-            {columns.length === 0 ? (
-              <div className="flex items-center justify-center w-full py-10 sm:py-24 text-gray-500">
-                <div className="text-center">
-                  <p className="text-lg">Nessuna colonna ancora.</p>
-                  <p className="text-sm mt-1">
-                    Aggiungi la prima colonna per iniziare.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              columns.map((col) => (
-                <Column
-                  key={col.id}
-                  column={col}
-                  boardId={boardId}
-                  onTasksChange={handleTasksChange}
-                  search={search}
-                />
-              ))
-            )}
-          </SortableContext>
-        </div>
-
-        <DragOverlay>
-          {activeTask && <TaskCard task={activeTask} />}
-        </DragOverlay>
-      </DndContext>
+      {selectedTask && (
+        <TaskModal
+          task={selectedTask}
+          boardId={boardId}
+          columnId={selectedTask.columnId}
+          onClose={() => setSelectedTask(null)}
+        />
+      )}
     </div>
   );
 }

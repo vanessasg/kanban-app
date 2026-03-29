@@ -16,7 +16,7 @@ import TaskCard from "../task/TaskCard";
 import TaskModal from "../task/TaskModal";
 import ConfirmModal from "../ui/ConfirmModal";
 
-export default function Column({ column, boardId, onTasksChange, search }) {
+export default function Column({ column, boardId, search }) {
   const [tasks, setTasks] = useState([]);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -50,10 +50,9 @@ export default function Column({ column, boardId, onTasksChange, search }) {
   useEffect(() => {
     const unsub = subscribeToTasks(boardId, column.id, (tasks) => {
       setTasks(tasks);
-      onTasksChange(column.id, tasks);
     });
     return unsub;
-  }, [boardId, column.id, onTasksChange]);
+  }, [boardId, column.id]);
 
   const handleAddTask = async (e) => {
     e.preventDefault();
