@@ -28,6 +28,7 @@ import TaskCard from "../components/task/TaskCard";
 
 import Header from "../components/ui/Header";
 import { useAuth } from "../context/AuthContext";
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 export default function Board() {
   const { id: boardId } = useParams();
@@ -44,6 +45,9 @@ export default function Board() {
   const [editingTitle, setEditingTitle] = useState(false);
 
   const { user, logout } = useAuth();
+  useDocumentTitle(
+    boardTitle ? `${boardTitle} — ${user?.displayName || user?.email}` : null,
+  );
 
   const handleLogout = async () => {
     await logout();

@@ -25,6 +25,7 @@ import {
 } from "../services/boardService";
 import ConfirmModal from "../components/ui/ConfirmModal";
 import Header from "../components/ui/Header";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
 const ACCENT_COLORS = [
   "#6366f1",
@@ -173,6 +174,8 @@ function BoardCard({ board, index, onOpen, onDelete }) {
 
 export default function Boards() {
   const { user, logout } = useAuth();
+  useDocumentTitle(user?.displayName || user?.email)
+  
   const navigate = useNavigate();
   const [boards, setBoards] = useState([]);
   const [newTitle, setNewTitle] = useState("");
