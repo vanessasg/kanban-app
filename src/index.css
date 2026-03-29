@@ -28,4 +28,20 @@
   .kanban-scroll::-webkit-scrollbar-track {
     background: transparent;
   }
+
+  /* day picker */
+  .rdp-month_caption,
+  .rdp-selected {
+    font-size: 17px !important;
+  }
+
+  th.rdp-weekday {
+    padding: 0;
+  }
+  .rdp-month_caption {
+    padding-left: 7px;
+  }
+  .rdp-dropdown:focus-visible ~ .rdp-caption_label {
+    outline: 0 !important;
+  }
 }

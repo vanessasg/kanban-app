@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { updateTask, deleteTask } from "../../services/boardService";
 import ConfirmModal from "../ui/ConfirmModal";
 import SubtaskList from "./SubtaskList";
+import DatePicker from "../ui/DatePicker";
 
 const PRESET_TAGS = ["Bug", "Feature", "Design", "Docs", "Urgent", "Review"];
 
@@ -112,12 +113,7 @@ export default function TaskModal({ task, boardId, columnId, onClose }) {
               <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
                 Scadenza
               </label>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
-              />
+              <DatePicker value={dueDate} onChange={setDueDate} />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
