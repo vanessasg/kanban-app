@@ -55,10 +55,34 @@ export default function TaskCard({ task, columnId, onClick }) {
       onClick={onClick}
       className="bg-gray-800 border border-gray-700 hover:border-indigo-500/50 rounded-lg p-3 cursor-grab active:cursor-grabbing transition-all flex flex-col gap-2"
     >
-      <p className="text-sm font-medium text-white leading-snug break-all">
-        {task.title}
-      </p>
-
+      <div className="flex justify-between items-center">
+        <p className="text-sm font-medium text-white leading-snug break-all">
+          {task.title}
+        </p>
+        {task.subtasksCount > 0 && (
+          <div className="flex items-center gap-1.5">
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-gray-500"
+            >
+              <polyline points="9 11 12 14 22 4" />
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+            </svg>
+            <span
+              className={`text-xs ${task.subtasksCompleted === task.subtasksCount ? "text-green-400" : "text-gray-500"}`}
+            >
+              {task.subtasksCompleted ?? 0}/{task.subtasksCount}
+            </span>
+          </div>
+        )}
+      </div>
       {task.description && (
         <p className="text-xs text-gray-500 leading-snug line-clamp-2 break-all">
           {task.description}
@@ -78,7 +102,7 @@ export default function TaskCard({ task, columnId, onClick }) {
             ))}
           </div>
 
-          <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             {dateInfo && (
               <span
                 className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${dateInfo.style}`}
@@ -103,7 +127,7 @@ export default function TaskCard({ task, columnId, onClick }) {
               </span>
             )}
             {task.assignee && (
-              <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
+              <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-semibold text-white shrink-0">
                 {task.assignee.charAt(0).toUpperCase()}
               </div>
             )}

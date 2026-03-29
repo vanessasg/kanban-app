@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { updateTask, deleteTask } from "../../services/boardService";
 import ConfirmModal from "../ui/ConfirmModal";
+import SubtaskList from "./SubtaskList";
 
 const PRESET_TAGS = ["Bug", "Feature", "Design", "Docs", "Urgent", "Review"];
 
@@ -152,6 +153,18 @@ export default function TaskModal({ task, boardId, columnId, onClose }) {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Sottotask */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+              Sottotask
+            </label>
+            <SubtaskList
+              boardId={boardId}
+              columnId={columnId}
+              taskId={task.id}
+            />
           </div>
         </div>
 

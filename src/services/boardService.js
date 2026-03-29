@@ -177,3 +177,140 @@ export async function getBoard(boardId) {
 export async function updateBoard(boardId, data) {
   return updateDoc(doc(db, "boards", boardId), data);
 }
+
+// ─── Subtasks ─────────────────────────────────────────────
+
+export function subscribeToSubtasks(boardId, columnId, taskId, callback) {
+  const q = query(
+    collection(
+      db,
+      "boards",
+      boardId,
+      "columns",
+      columnId,
+      "tasks",
+      taskId,
+      "subtasks",
+    ),
+    orderBy("order", "asc"),
+  );
+  return onSnapshot(q, (snap) =>
+    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+  );
+}
+
+export async function createSubtask(boardId, columnId, taskId, title) {
+  const snap = await getDocs(
+    collection(
+      db,
+      "boards",
+      boardId,
+      "columns",
+      columnId,
+      "tasks",
+      taskId,
+      "subtasks",
+    ),
+  );
+  const batch = writeBatch(db);
+  const subtaskRef = doc(
+    collection(
+      db,
+      "boards",
+      boardId,
+      "columns",
+      columnId,
+      "tasks",
+      taskId,
+      "subtasks",
+    ),
+  );
+  batch.set(subtaskRef, {
+    title,
+    completed: false,
+    order: snap.size,
+    createdAt: serverTimestamp(),
+  });
+  batch.update(
+    doc(db, "boards", boardId, "columns", columnId, "tasks", taskId),
+    { subtasksCount: snap.size + 1 },
+  );
+  return batch.commit();
+}
+
+export async function updateSubtask(
+  boardId,
+  columnId,
+  taskId,
+  subtaskId,
+  data,
+) {
+  await updateDoc(
+    doc(
+      db,
+      "boards",
+      boardId,
+      "columns",
+      columnId,
+      "tasks",
+      taskId,
+      "subtasks",
+      subtaskId,
+    ),
+    data,
+  );
+  // ricalcola completati
+  const snap = await getDocs(
+    collection(
+      db,
+      "boards",
+      boardId,
+      "columns",
+      columnId,
+      "tasks",
+      taskId,
+      "subtasks",
+    ),
+  );
+  const completed = snap.docs.filter((d) => d.data().completed).length;
+  return updateDoc(
+    doc(db, "boards", boardId, "columns", columnId, "tasks", taskId),
+    { subtasksCompleted: completed },
+  );
+}
+
+export async function deleteSubtask(boardId, columnId, taskId, subtaskId) {
+  const batch = writeBatch(db);
+  batch.delete(
+    doc(
+      db,
+      "boards",
+      boardId,
+      "columns",
+      columnId,
+      "tasks",
+      taskId,
+      "subtasks",
+      subtaskId,
+    ),
+  );
+  const snap = await getDocs(
+    collection(
+      db,
+      "boards",
+      boardId,
+      "columns",
+      columnId,
+      "tasks",
+      taskId,
+      "subtasks",
+    ),
+  );
+  const remaining = snap.docs.filter((d) => d.id !== subtaskId);
+  const completed = remaining.filter((d) => d.data().completed).length;
+  batch.update(
+    doc(db, "boards", boardId, "columns", columnId, "tasks", taskId),
+    { subtasksCount: remaining.length, subtasksCompleted: completed },
+  );
+  return batch.commit();
+}
