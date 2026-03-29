@@ -233,7 +233,7 @@ export default function Board() {
       {/* Add column form */}
       {showColForm && (
         <form
-          onSubmit={handleAddColumn}ß
+          onSubmit={handleAddColumn}
           className={`flex gap-3 px-6 py-3 border-b border-gray-800 shrink-0 w-full ${columns.length === 0 ? "justify-center" : ""}`}
         >
           <input
